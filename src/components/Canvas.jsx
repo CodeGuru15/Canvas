@@ -14,30 +14,31 @@ const Canvas = () => {
   const [fontSize, setFontSize] = useState(15);
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
+  const [isUnderLined, setIsUnderLined] = useState(false);
   const [fontStyle, setFontStyle] = useState("Font");
   const [isAddText, setIsAddText] = useState(false);
   const [userText, setUserText] = useState("");
 
-  const [allNotes, setAllNotes] = useState([]);
-
   const initialPosition = { x: 0, y: 0 };
+
+  const [position, setPosition] = useState(initialPosition);
+
+  const [draggableComponent, setDraggableComponent] = useState({
+    text: "",
+    position: position,
+  });
 
   const fontStyles = ["Sans-serif", "Monospace", "Serif"];
 
   const handleSubmitText = () => {
     const newNote = { id: 1, text: userText, position: initialPosition };
 
-    allNotes.push(newNote);
+    setDraggableComponent(newNote);
     setUserText("");
     setIsAddText(false);
   };
 
-  useEffect(() => {
-    console.log(allNotes);
-  }, [allNotes.length]);
-
-  const Notes = ({ text, newposition }) => {
-    const [position, setPosition] = useState(newposition);
+  const Notes = () => {
     const noteRef = useRef(null);
 
     const handleMouseDown = (e) => {
@@ -50,6 +51,10 @@ const Canvas = () => {
         const newY = e.clientY - offsetY;
         const updatePosition = { x: newX, y: newY };
         setPosition(updatePosition);
+        setDraggableComponent({
+          ...draggableComponent,
+          position: updatePosition,
+        });
       };
 
       const onMouseUp = () => {
@@ -63,7 +68,7 @@ const Canvas = () => {
 
     const customStyle = `bg-slate-300 flex cursor-move text-slate-800 p-2 rounded-md absolute  ${
       isBold ? "font-bold" : null
-    } ${isItalic ? "italic" : null}`;
+    } ${isItalic ? "italic" : null} ${isUnderLined ? "underline" : null}`;
 
     return (
       <div
@@ -77,7 +82,7 @@ const Canvas = () => {
         }}
         onMouseDown={handleMouseDown}
       >
-        {text}
+        {draggableComponent.text}
       </div>
     );
   };
@@ -124,13 +129,7 @@ const Canvas = () => {
       </div>
       <div className="flex justify-center w-full bg-slate-100 grow">
         <div className=" bg-slate-200 md:w-1/2 lg:w-1/3 w-[80%]">
-          {allNotes.map((note) => {
-            return (
-              <div key={note.id}>
-                <Notes text={note.text} newposition={note.position} />
-              </div>
-            );
-          })}
+          {draggableComponent.text != "" ? <Notes /> : null}
         </div>
       </div>
       <div className="flex justify-center w-full font-semibold shadow-md grow-0">
@@ -170,7 +169,7 @@ const Canvas = () => {
               </button>
             )}
             <span className="flex justify-center ">{fontSize}</span>
-            {fontSize < 20 ? (
+            {fontSize < 25 ? (
               <button
                 onClick={() => setFontSize((size) => size + 1)}
                 className="p-1 "
@@ -213,8 +212,19 @@ const Canvas = () => {
             <button className="p-1 hover:bg-slate-200">
               <BsTextCenter />
             </button>
-            <button className="p-1 hover:bg-slate-200">
-              <PiTextUnderlineBold />
+            <button
+              className="p-1 hover:bg-slate-200"
+              onClick={() => setIsUnderLined(!isUnderLined)}
+            >
+              {isUnderLined ? (
+                <span className="text-black ">
+                  <PiTextUnderlineBold />
+                </span>
+              ) : (
+                <span>
+                  <PiTextUnderlineBold />
+                </span>
+              )}
             </button>
           </div>
         </div>
