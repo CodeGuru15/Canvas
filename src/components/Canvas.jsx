@@ -1,4 +1,4 @@
-import { LuDnaOff, LuUndo2 } from "react-icons/lu";
+import { LuUndo2 } from "react-icons/lu";
 import { LuRedo2 } from "react-icons/lu";
 import { RxText } from "react-icons/rx";
 import { FaMinus } from "react-icons/fa6";
@@ -21,23 +21,73 @@ const Canvas = () => {
   const [currentindex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  const initialPosition = { x: 100, y: 100 };
+  const initialPosition = { x: 500, y: 300 };
 
   const [position, setPosition] = useState(initialPosition);
 
   const [textElement, setTextElement] = useState({
     elementText: "",
     elementPosition: position,
+    elementFont: fontStyle,
+    elementSize: fontSize,
+    elementBold: isBold,
+    elementItalic: isItalic,
+    elementUnderline: isUnderLined,
   });
 
   const historyElement = useRef([textElement]);
+
+  const currentElement = historyElement.current[currentindex];
 
   useEffect(() => {
     if (textElement.elementText != "") {
       historyElement.current = [...historyElement.current, { ...textElement }];
       setCurrentIndex(historyElement.current.length - 1);
     }
-  }, [textElement.elementText, textElement.elementPosition]);
+  }, [
+    textElement.elementText,
+    textElement.elementPosition,
+    textElement.elementFont,
+    textElement.elementSize,
+    textElement.elementBold,
+    textElement.elementItalic,
+    textElement.elementUnderline,
+  ]);
+
+  useEffect(() => {
+    if (textElement.elementText != "") {
+      setTextElement((element) => ({
+        ...element,
+        elementBold: isBold,
+      }));
+      setTextElement((element) => ({
+        ...element,
+        elementItalic: isItalic,
+      }));
+      setTextElement((element) => ({
+        ...element,
+        elementUnderline: isUnderLined,
+      }));
+    }
+  }, [isBold, isItalic, isUnderLined]);
+
+  useEffect(() => {
+    if (textElement.elementText != "") {
+      setTextElement((element) => ({
+        ...element,
+        elementFont: fontStyle,
+      }));
+    }
+  }, [fontStyle]);
+
+  useEffect(() => {
+    if (textElement.elementText != "") {
+      setTextElement((element) => ({
+        ...element,
+        elementSize: fontSize,
+      }));
+    }
+  }, [fontSize]);
 
   useEffect(() => {
     if (!isDragging) {
@@ -96,11 +146,11 @@ const Canvas = () => {
       window.addEventListener("mouseup", onMouseUp);
     };
 
-    console.log(textElement.elementPosition);
-
     const customStyle = `bg-slate-300 flex cursor-move text-slate-800 p-2 rounded-md absolute  ${
-      isBold ? "font-bold" : null
-    } ${isItalic ? "italic" : null} ${isUnderLined ? "underline" : null}`;
+      currentElement.elementBold ? "font-bold" : null
+    } ${currentElement.elementItalic ? "italic" : null} ${
+      currentElement.elementUnderline ? "underline" : null
+    }`;
 
     return (
       <>
@@ -123,14 +173,14 @@ const Canvas = () => {
             ref={noteRef}
             className={customStyle}
             style={{
-              left: `${historyElement.current[currentindex].elementPosition.x}px`,
-              top: `${historyElement.current[currentindex].elementPosition.y}px`,
-              fontFamily: `${fontStyle}`,
-              fontSize: `${fontSize}px`,
+              left: `${currentElement.elementPosition.x}px`,
+              top: `${currentElement.elementPosition.y}px`,
+              fontFamily: `${currentElement.elementFont}`,
+              fontSize: `${currentElement.elementSize}px`,
             }}
             onMouseDown={handleMouseDown}
           >
-            {historyElement.current[currentindex].elementText}
+            {currentElement.elementText}
           </div>
         )}
       </>
@@ -185,9 +235,7 @@ const Canvas = () => {
       </div>
       <div className="flex justify-center w-full bg-slate-100 grow">
         <div className=" bg-slate-200 md:w-1/2 lg:w-1/3 w-[80%]">
-          {historyElement.current[currentindex].elementText != "" ? (
-            <Notes />
-          ) : null}
+          {currentElement.elementText != "" ? <Notes /> : null}
         </div>
       </div>
       <div className="flex justify-center w-full font-semibold shadow-md grow-0">
@@ -267,9 +315,9 @@ const Canvas = () => {
                 </span>
               )}
             </button>
-            <button className="p-1 hover:bg-slate-200">
+            {/* <button className="p-1 hover:bg-slate-200">
               <BsTextCenter />
-            </button>
+            </button> */}
             <button
               className="p-1 hover:bg-slate-200"
               onClick={() => setIsUnderLined(!isUnderLined)}
