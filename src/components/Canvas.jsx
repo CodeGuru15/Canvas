@@ -1,4 +1,4 @@
-import { LuUndo2 } from "react-icons/lu";
+import { LuDnaOff, LuUndo2 } from "react-icons/lu";
 import { LuRedo2 } from "react-icons/lu";
 import { RxText } from "react-icons/rx";
 import { FaMinus } from "react-icons/fa6";
@@ -15,27 +15,59 @@ const Canvas = () => {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderLined, setIsUnderLined] = useState(false);
-  const [fontStyle, setFontStyle] = useState("Font");
+  const [fontStyle, setFontStyle] = useState("");
   const [isAddText, setIsAddText] = useState(false);
   const [userText, setUserText] = useState("");
+  const [currentindex, setCurrentIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const initialPosition = { x: 0, y: 0 };
+  const initialPosition = { x: 100, y: 100 };
 
   const [position, setPosition] = useState(initialPosition);
 
-  const [draggableComponent, setDraggableComponent] = useState({
-    text: "",
-    position: position,
+  const [textElement, setTextElement] = useState({
+    elementText: "",
+    elementPosition: position,
   });
+
+  const historyElement = useRef([textElement]);
+
+  useEffect(() => {
+    if (textElement.elementText != "") {
+      historyElement.current = [...historyElement.current, { ...textElement }];
+      setCurrentIndex(historyElement.current.length - 1);
+    }
+  }, [textElement.elementText, textElement.elementPosition]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setTextElement((element) => ({
+        ...element,
+        elementPosition: position,
+      }));
+    }
+  }, [isDragging]);
 
   const fontStyles = ["Sans-serif", "Monospace", "Serif"];
 
   const handleSubmitText = () => {
-    const newNote = { id: 1, text: userText, position: initialPosition };
-
-    setDraggableComponent(newNote);
-    setUserText("");
+    setTextElement((element) => ({
+      ...element,
+      elementText: userText,
+    }));
     setIsAddText(false);
+  };
+
+  const handleUndo = () => {
+    if (currentindex > 0) {
+      setCurrentIndex(currentindex - 1);
+    }
+  };
+
+  const handleRedo = () => {
+    if (currentindex < historyElement.current.length - 1) {
+      setCurrentIndex(currentindex + 1);
+    }
   };
 
   const Notes = () => {
@@ -51,39 +83,57 @@ const Canvas = () => {
         const newY = e.clientY - offsetY;
         const updatePosition = { x: newX, y: newY };
         setPosition(updatePosition);
-        setDraggableComponent({
-          ...draggableComponent,
-          position: updatePosition,
-        });
+        setIsDragging(true);
       };
 
       const onMouseUp = () => {
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
+        setIsDragging(false);
       };
 
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     };
 
+    console.log(textElement.elementPosition);
+
     const customStyle = `bg-slate-300 flex cursor-move text-slate-800 p-2 rounded-md absolute  ${
       isBold ? "font-bold" : null
     } ${isItalic ? "italic" : null} ${isUnderLined ? "underline" : null}`;
 
     return (
-      <div
-        ref={noteRef}
-        className={customStyle}
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          fontFamily: `${fontStyle}`,
-          fontSize: `${fontSize}px`,
-        }}
-        onMouseDown={handleMouseDown}
-      >
-        {draggableComponent.text}
-      </div>
+      <>
+        {isDragging ? (
+          <div
+            ref={noteRef}
+            className={customStyle}
+            style={{
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              fontFamily: `${fontStyle}`,
+              fontSize: `${fontSize}px`,
+            }}
+            onMouseDown={handleMouseDown}
+          >
+            {historyElement.current[currentindex].elementText}
+          </div>
+        ) : (
+          <div
+            ref={noteRef}
+            className={customStyle}
+            style={{
+              left: `${historyElement.current[currentindex].elementPosition.x}px`,
+              top: `${historyElement.current[currentindex].elementPosition.y}px`,
+              fontFamily: `${fontStyle}`,
+              fontSize: `${fontSize}px`,
+            }}
+            onMouseDown={handleMouseDown}
+          >
+            {historyElement.current[currentindex].elementText}
+          </div>
+        )}
+      </>
     );
   };
 
@@ -96,7 +146,7 @@ const Canvas = () => {
               type="text"
               value={userText}
               onChange={(e) => setUserText(e.target.value)}
-              className="p-1 outline-none"
+              className="p-1 outline-none text-slate-900"
               placeholder="Add Text"
             />
           </div>
@@ -114,13 +164,19 @@ const Canvas = () => {
         </div>
       ) : null}
       <div className="flex flex-row justify-center w-full gap-5 py-3 shadow-md grow-0">
-        <button className="flex flex-col font-semibold place-items-center hover:text-black">
+        <button
+          onClick={handleUndo}
+          className="flex flex-col font-semibold place-items-center hover:text-black"
+        >
           <span>
             <LuUndo2 />
           </span>
           <span>undo</span>
         </button>
-        <button className="flex flex-col font-semibold place-items-center hover:text-black">
+        <button
+          onClick={handleRedo}
+          className="flex flex-col font-semibold place-items-center hover:text-black"
+        >
           <span>
             <LuRedo2 />
           </span>
@@ -129,7 +185,9 @@ const Canvas = () => {
       </div>
       <div className="flex justify-center w-full bg-slate-100 grow">
         <div className=" bg-slate-200 md:w-1/2 lg:w-1/3 w-[80%]">
-          {draggableComponent.text != "" ? <Notes /> : null}
+          {historyElement.current[currentindex].elementText != "" ? (
+            <Notes />
+          ) : null}
         </div>
       </div>
       <div className="flex justify-center w-full font-semibold shadow-md grow-0">
